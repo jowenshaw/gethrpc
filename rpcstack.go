@@ -33,15 +33,15 @@ import (
 	"github.com/rs/cors"
 )
 
-// httpConfig is the JSON-RPC/HTTP configuration.
-type httpConfig struct {
+// HTTPConfig is the JSON-RPC/HTTP configuration.
+type HTTPConfig struct {
 	Modules            []string
 	CorsAllowedOrigins []string
 	Vhosts             []string
 }
 
-// wsConfig is the JSON-RPC/Websocket configuration
-type wsConfig struct {
+// WSConfig is the JSON-RPC/Websocket configuration
+type WSConfig struct {
 	Origins []string
 	Modules []string
 }
@@ -61,11 +61,11 @@ type httpServer struct {
 	listener net.Listener // non-nil when server is running
 
 	// HTTP RPC handler things.
-	httpConfig  httpConfig
+	httpConfig  HTTPConfig
 	httpHandler atomic.Value // *rpcHandler
 
 	// WebSocket handler things.
-	wsConfig  wsConfig
+	wsConfig  WSConfig
 	wsHandler atomic.Value // *rpcHandler
 
 	// These are set by setListenAddr.
@@ -76,7 +76,7 @@ type httpServer struct {
 	handlerNames map[string]string
 }
 
-func newHTTPServer(log log.Logger, timeouts HTTPTimeouts) *httpServer {
+func NewHTTPServer(log log.Logger, timeouts HTTPTimeouts) *httpServer {
 	h := &httpServer{log: log, timeouts: timeouts, handlerNames: make(map[string]string)}
 	h.httpHandler.Store((*rpcHandler)(nil))
 	h.wsHandler.Store((*rpcHandler)(nil))
@@ -85,7 +85,7 @@ func newHTTPServer(log log.Logger, timeouts HTTPTimeouts) *httpServer {
 
 // setListenAddr configures the listening address of the server.
 // The address can only be set while the server isn't running.
-func (h *httpServer) setListenAddr(host string, port int) error {
+func (h *httpServer) SetListenAddr(host string, port int) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -98,8 +98,8 @@ func (h *httpServer) setListenAddr(host string, port int) error {
 	return nil
 }
 
-// listenAddr returns the listening address of the server.
-func (h *httpServer) listenAddr() string {
+// ListenAddr returns the listening address of the server.
+func (h *httpServer) ListenAddr() string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -110,7 +110,7 @@ func (h *httpServer) listenAddr() string {
 }
 
 // start starts the HTTP server if it is enabled and not already running.
-func (h *httpServer) start() error {
+func (h *httpServer) Start() error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -192,7 +192,7 @@ func (h *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // stop shuts down the HTTP server.
-func (h *httpServer) stop() {
+func (h *httpServer) Stop() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.doStop()
@@ -223,8 +223,8 @@ func (h *httpServer) doStop() {
 	h.server, h.listener = nil, nil
 }
 
-// enableRPC turns on JSON-RPC over HTTP on the server.
-func (h *httpServer) enableRPC(apis []API, config httpConfig) error {
+// EnableRPC turns on JSON-RPC over HTTP on the server.
+func (h *httpServer) EnableRPC(apis []API, config HTTPConfig) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -256,7 +256,7 @@ func (h *httpServer) disableRPC() bool {
 }
 
 // enableWS turns on JSON-RPC over WebSocket on the server.
-func (h *httpServer) enableWS(apis []API, config wsConfig) error {
+func (h *httpServer) EnableWS(apis []API, config WSConfig) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -277,8 +277,8 @@ func (h *httpServer) enableWS(apis []API, config wsConfig) error {
 	return nil
 }
 
-// stopWS disables JSON-RPC over WebSocket and also stops the server if it only serves WebSocket.
-func (h *httpServer) stopWS() {
+// StopWS disables JSON-RPC over WebSocket and also stops the server if it only serves WebSocket.
+func (h *httpServer) StopWS() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 

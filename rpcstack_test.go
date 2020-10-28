@@ -29,8 +29,8 @@ import (
 
 // TestCorsHandler makes sure CORS are properly handled on the http server.
 func TestCorsHandler(t *testing.T) {
-	srv := createAndStartServer(t, httpConfig{CorsAllowedOrigins: []string{"test", "test.com"}}, false, wsConfig{})
-	defer srv.stop()
+	srv := createAndStartServer(t, HTTPConfig{CorsAllowedOrigins: []string{"test", "test.com"}}, false, WSConfig{})
+	defer srv.Stop()
 
 	resp := testRequest(t, "origin", "test.com", "", srv)
 	assert.Equal(t, "test.com", resp.Header.Get("Access-Control-Allow-Origin"))
@@ -41,8 +41,8 @@ func TestCorsHandler(t *testing.T) {
 
 // TestVhosts makes sure vhosts are properly handled on the http server.
 func TestVhosts(t *testing.T) {
-	srv := createAndStartServer(t, httpConfig{Vhosts: []string{"test"}}, false, wsConfig{})
-	defer srv.stop()
+	srv := createAndStartServer(t, HTTPConfig{Vhosts: []string{"test"}}, false, WSConfig{})
+	defer srv.Stop()
 
 	resp := testRequest(t, "", "", "test", srv)
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
@@ -53,18 +53,18 @@ func TestVhosts(t *testing.T) {
 
 // TestWebsocketOrigins makes sure the websocket origins are properly handled on the websocket server.
 func TestWebsocketOrigins(t *testing.T) {
-	srv := createAndStartServer(t, httpConfig{}, true, wsConfig{Origins: []string{"test"}})
-	defer srv.stop()
+	srv := createAndStartServer(t, HTTPConfig{}, true, WSConfig{Origins: []string{"test"}})
+	defer srv.Stop()
 
 	dialer := websocket.DefaultDialer
-	_, _, err := dialer.Dial("ws://"+srv.listenAddr(), http.Header{
+	_, _, err := dialer.Dial("ws://"+srv.ListenAddr(), http.Header{
 		"Content-type":          []string{"application/json"},
 		"Sec-WebSocket-Version": []string{"13"},
 		"Origin":                []string{"test"},
 	})
 	assert.NoError(t, err)
 
-	_, _, err = dialer.Dial("ws://"+srv.listenAddr(), http.Header{
+	_, _, err = dialer.Dial("ws://"+srv.ListenAddr(), http.Header{
 		"Content-type":          []string{"application/json"},
 		"Sec-WebSocket-Version": []string{"13"},
 		"Origin":                []string{"bad"},
@@ -87,17 +87,17 @@ func TestIsWebsocket(t *testing.T) {
 	assert.True(t, isWebsocket(r))
 }
 
-func createAndStartServer(t *testing.T, conf httpConfig, ws bool, wsConf wsConfig) *httpServer {
+func createAndStartServer(t *testing.T, conf HTTPConfig, ws bool, wsConf WSConfig) *httpServer {
 	t.Helper()
 
-	srv := newHTTPServer(testlog.Logger(t, log.LvlDebug), DefaultHTTPTimeouts)
+	srv := NewHTTPServer(testlog.Logger(t, log.LvlDebug), DefaultHTTPTimeouts)
 
-	assert.NoError(t, srv.enableRPC(nil, conf))
+	assert.NoError(t, srv.EnableRPC(nil, conf))
 	if ws {
-		assert.NoError(t, srv.enableWS(nil, wsConf))
+		assert.NoError(t, srv.EnableWS(nil, wsConf))
 	}
-	assert.NoError(t, srv.setListenAddr("localhost", 0))
-	assert.NoError(t, srv.start())
+	assert.NoError(t, srv.SetListenAddr("localhost", 0))
+	assert.NoError(t, srv.Start())
 
 	return srv
 }
@@ -106,7 +106,7 @@ func testRequest(t *testing.T, key, value, host string, srv *httpServer) *http.R
 	t.Helper()
 
 	body := bytes.NewReader([]byte(`{"jsonrpc":"2.0","id":1,method":"rpc_modules"}`))
-	req, _ := http.NewRequest("POST", "http://"+srv.listenAddr(), body)
+	req, _ := http.NewRequest("POST", "http://"+srv.ListenAddr(), body)
 	req.Header.Set("content-type", "application/json")
 	if key != "" && value != "" {
 		req.Header.Set(key, value)
